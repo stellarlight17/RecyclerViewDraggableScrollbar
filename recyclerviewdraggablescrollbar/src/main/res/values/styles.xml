@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <declare-styleable name="RecyclerViewDraggableScrollbar">
+        <attr name="trackWidth" format="dimension" />
+        <attr name="trackColor" format="reference|color" />
+        <attr name="thumbWidth" format="dimension" />
+        <attr name="thumbHeight" format="dimension" />
+        <attr name="thumbColor" format="reference|color" />
+        <attr name="thumbCornerRadius" format="dimension" />
+    </declare-styleable>
+</resources>
