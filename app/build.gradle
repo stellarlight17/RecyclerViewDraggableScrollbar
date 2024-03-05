@@ -1,6 +1,7 @@
 plugins {
     id 'com.android.application'
     id 'org.jetbrains.kotlin.android'
+    id 'maven-publish'
 }
 
 android {
@@ -9,10 +10,11 @@ android {
 
     defaultConfig {
         applicationId 'com.stellarlight17.recyclerviewdraggablescrollbar'
-        minSdk 26
-        targetSdk 33
+        minSdkVersion 26
+        targetSdkVersion 33
         versionCode 1
         versionName "1.0"
+        multiDexEnabled true
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
 
@@ -27,7 +29,7 @@ android {
 
     buildTypes {
         release {
-            minifyEnabled true
+            minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
@@ -43,12 +45,14 @@ android {
 }
 
 dependencies {
+    implementation project(':library')
+
+    implementation 'com.android.support:multidex:1.0.3'
     implementation 'androidx.core:core-ktx:1.8.0'
     implementation 'androidx.appcompat:appcompat:1.6.1'
     implementation 'com.google.android.material:material:1.5.0'
-    implementation 'com.google.guava:listenablefuture:9999.0-empty-to-avoid-conflict-with-guava'
-    implementation project(':recyclerviewdraggablescrollbar')
-    //implementation 'com.github.stellarlight17:RecyclerViewDraggableScrollbar:0.1.0'
+    //implementation 'com.google.guava:listenablefuture:9999.0-empty-to-avoid-conflict-with-guava'
+    //implementation 'com.github.stellarlight17.RecyclerViewDraggableScrollbar:recyclerviewdraggablescrollbar:master-SNAPSHOT'
     testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'androidx.test.ext:junit:1.1.5'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
