@@ -5,7 +5,7 @@ plugins {
 }
 
 group = 'com.github.stellarlight17'
-version = '0.1.0'
+version = '0.2.0'
 
 android {
     namespace 'com.stellarlight17.recyclerviewdraggablescrollbar'
@@ -45,7 +45,7 @@ android {
 }
 
 dependencies {
-    implementation fileTree(dir: 'libs', include: ['*.jar'])
+    //implementation fileTree(dir: 'libs', include: ['*.jar'])
 
     implementation 'com.android.support:multidex:1.0.3'
     //implementation 'androidx.core:core-ktx:1.8.0'
@@ -62,9 +62,9 @@ afterEvaluate {
             // Creates a Maven publication called "release".
             release(MavenPublication) {
                 from components.release
-                groupId = 'com.github.stellarlight17'
+                groupId = "${group}"
                 artifactId = 'RecyclerViewDraggableScrollbar'
-                version = '0.1.0'
+                version =  "${version}"
             }
         }
     }

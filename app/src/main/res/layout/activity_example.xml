@@ -19,7 +19,10 @@
         app:thumbWidth="16dp"
         app:thumbHeight="30dp"
         app:trackWidth="16dp"
-        app:thumbColor="@color/purple_500"
+        app:trackColor="?attr/colorBackgroundFloating"
+        app:trackCornerRadius="10dp"
+        app:thumbColor="?attr/colorPrimary"
+        app:thumbSelectedColor="?colorSecondary"
         app:thumbCornerRadius="10dp"/>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

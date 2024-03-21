@@ -4,6 +4,9 @@ import android.content.Context
 import android.util.AttributeSet
 import android.view.MotionEvent
 import android.view.View
+import android.view.animation.Animation
+import android.view.animation.Animation.AnimationListener
+import android.view.animation.AnimationUtils
 import android.widget.LinearLayout
 import android.widget.RelativeLayout
 import androidx.annotation.IntDef
@@ -11,12 +14,19 @@ import androidx.annotation.RestrictTo
 import androidx.cardview.widget.CardView
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import java.util.Timer
+import java.util.TimerTask
 import kotlin.math.max
 import kotlin.math.min
 
 class RecyclerViewDraggableScrollbar: RelativeLayout {
-    private var trackView: View
+    private var trackView: CardView
+    private var trackContentView: View
     private lateinit var thumbView: CardView
+    private lateinit var thumbContentView: View
+
+    private var thumbNormalColor = this.context.getColor(DEFAULT_THUMB_COLOR)
+    private var thumbSelectedColor = this.context.getColor(DEFAULT_THUMB_SELECTED_COLOR)
 
     private var orientation = DEFAULT_ORIENTATION
 
@@ -31,11 +41,16 @@ class RecyclerViewDraggableScrollbar: RelativeLayout {
     private var minX = 0f
     private var maxX = -1f
 
+    private var hideDelay = 1000L
+    private var hideTimer: Timer? = null
+
     private val thumbTouchListener = object: View.OnTouchListener {
         private var lastRawX: Float = 0f
         private var lastRawY: Float = 0f
 
         override fun onTouch(p0: View?, p1: MotionEvent?): Boolean {
+            this@RecyclerViewDraggableScrollbar.cancelHideTimer()
+
             recyclerView?.let { recyclerView ->
                 if (thumbWidth <= 0) thumbWidth = thumbView.right.toFloat() - thumbView.left
                 if (thumbHeight <= 0) thumbHeight = thumbView.bottom.toFloat() - thumbView.top
@@ -45,13 +60,20 @@ class RecyclerViewDraggableScrollbar: RelativeLayout {
                 when (p1?.action) {
                     MotionEvent.ACTION_DOWN -> {
                         moving = true
+                        this@RecyclerViewDraggableScrollbar.thumbContentView.setBackgroundColor(
+                            this@RecyclerViewDraggableScrollbar.thumbSelectedColor)
                         this.lastRawX = p1.rawX
                         this.lastRawY = p1.rawY
                     }
                     MotionEvent.ACTION_MOVE -> {
                         if (moving) { this.computeThumbPosition(recyclerView, p1) }
                     }
-                    MotionEvent.ACTION_UP -> moving = false
+                    MotionEvent.ACTION_UP -> {
+                        moving = false
+                        this@RecyclerViewDraggableScrollbar.thumbContentView.setBackgroundColor(
+                            this@RecyclerViewDraggableScrollbar.thumbNormalColor)
+                        this@RecyclerViewDraggableScrollbar.setHideTimer()
+                    }
                     else -> {}
                 }
                 return moving
@@ -100,6 +122,8 @@ class RecyclerViewDraggableScrollbar: RelativeLayout {
 
     private val recyclerViewScrollListener = object: RecyclerView.OnScrollListener() {
         override fun onScrollStateChanged(recyclerView: androidx.recyclerview.widget.RecyclerView, newState: Int) {
+            if (newState == RecyclerView.SCROLL_STATE_IDLE) this@RecyclerViewDraggableScrollbar.setHideTimer()
+            else this@RecyclerViewDraggableScrollbar.cancelHideTimer()
             super.onScrollStateChanged(recyclerView, newState)
         }
 
@@ -182,20 +206,28 @@ class RecyclerViewDraggableScrollbar: RelativeLayout {
     }
 
     private fun updateVisibility(visible: Boolean) {
-        this.visibility = if (visible) View.VISIBLE else View.INVISIBLE
+        //this.visibility = if (visible) View.VISIBLE else View.INVISIBLE
+        if (visible) this.showWithAnimation() else this.visibility = View.INVISIBLE
     }
 
     private fun setAttributes(attrs: AttributeSet) {
         val defaultTrackColor = this.context.getColor(DEFAULT_TRACK_COLOR)
         val defaultThumbColor = this.context.getColor(DEFAULT_THUMB_COLOR)
+        val defaultThumbSelectedColor = this.context.getColor(DEFAULT_THUMB_SELECTED_COLOR)
 
         this.context.theme.obtainStyledAttributes(attrs, R.styleable.RecyclerViewDraggableScrollbar, 0, 0).apply {
             try {
                 this.getDimension(R.styleable.RecyclerViewDraggableScrollbar_trackWidth, DEFAULT_TRACK_WIDTH).also {
                     this@RecyclerViewDraggableScrollbar.trackView.layoutParams.width = it.toInt()
                 }
+
                 this.getColor(R.styleable.RecyclerViewDraggableScrollbar_trackColor, defaultTrackColor).also {
-                    this@RecyclerViewDraggableScrollbar.trackView.setBackgroundColor(it)
+                    //this@RecyclerViewDraggableScrollbar.trackView.setBackgroundColor(it)
+                    this@RecyclerViewDraggableScrollbar.trackContentView.setBackgroundColor(it)
+                }
+
+                this.getDimension(R.styleable.RecyclerViewDraggableScrollbar_trackCornerRadius, DEFAULT_TRACK_CORNER_RADIUS).also {
+                    this@RecyclerViewDraggableScrollbar.trackView.radius = it
                 }
 
                 this.getDimension(R.styleable.RecyclerViewDraggableScrollbar_thumbWidth, DEFAULT_THUMB_WIDTH).also {
@@ -207,7 +239,13 @@ class RecyclerViewDraggableScrollbar: RelativeLayout {
                 }
 
                 this.getColor(R.styleable.RecyclerViewDraggableScrollbar_thumbColor, defaultThumbColor).also {
-                    this@RecyclerViewDraggableScrollbar.thumbView.findViewById<View>(R.id.thumbContentView).setBackgroundColor(it)
+                    //this@RecyclerViewDraggableScrollbar.thumbView.findViewById<View>(R.id.thumbContentView).setBackgroundColor(it)
+                    this@RecyclerViewDraggableScrollbar.thumbNormalColor = it
+                    this@RecyclerViewDraggableScrollbar.thumbContentView.setBackgroundColor(it)
+                }
+
+                this.getColor(R.styleable.RecyclerViewDraggableScrollbar_thumbSelectedColor, defaultThumbSelectedColor).also {
+                    this@RecyclerViewDraggableScrollbar.thumbSelectedColor = it
                 }
 
                 this.getDimension(R.styleable.RecyclerViewDraggableScrollbar_thumbCornerRadius, DEFAULT_THUMB_CORNER_RADIUS).also {
@@ -217,10 +255,43 @@ class RecyclerViewDraggableScrollbar: RelativeLayout {
         }
     }
 
+    private fun cancelHideTimer() {
+        this.hideTimer?.cancel()
+        this.hideTimer = null
+    }
+
+    private fun setHideTimer() {
+        this.cancelHideTimer()
+        this.hideTimer = Timer().apply { this.schedule(object: TimerTask() {
+            override fun run() { this@RecyclerViewDraggableScrollbar.hideWithAnimation() }
+        }, this@RecyclerViewDraggableScrollbar.hideDelay) }
+    }
+
+    private fun hideWithAnimation() {
+        AnimationUtils.loadAnimation(this.context, android.R.anim.fade_out).apply {
+            this.setAnimationListener(object: AnimationListener {
+                override fun onAnimationStart(p0: Animation?) {}
+                override fun onAnimationEnd(p0: Animation?) {
+                    this@RecyclerViewDraggableScrollbar.visibility = View.INVISIBLE
+                }
+                override fun onAnimationRepeat(p0: Animation?) {}
+            })
+            this@RecyclerViewDraggableScrollbar.startAnimation(this)
+        }
+    }
+
+    private fun showWithAnimation() {
+        if (this.visibility == View.VISIBLE) return
+        this.visibility = View.VISIBLE
+        this.startAnimation(AnimationUtils.loadAnimation(this.context, android.R.anim.fade_in).apply { this.duration = 200 })
+    }
+
     init {
         inflate(this.context, R.layout.view_recyclerview_draggable_scrollbar, this)
         this.trackView = this.findViewById(R.id.trackView)
+        this.trackContentView = this.findViewById(R.id.trackContentView)
         this.thumbView = this.findViewById(R.id.thumbView)
+        this.thumbContentView = this.thumbView.findViewById(R.id.thumbContentView)
     }
 
     @RestrictTo(RestrictTo.Scope.LIBRARY_GROUP_PREFIX)
@@ -235,10 +306,12 @@ class RecyclerViewDraggableScrollbar: RelativeLayout {
 
         const val DEFAULT_TRACK_WIDTH = 20f
         const val DEFAULT_TRACK_COLOR = android.R.color.darker_gray
+        const val DEFAULT_TRACK_CORNER_RADIUS = 0f
 
         const val DEFAULT_THUMB_WIDTH = 20f
         const val DEFAULT_THUMB_HEIGHT = 50f
         const val DEFAULT_THUMB_COLOR = android.R.color.holo_red_dark
+        const val DEFAULT_THUMB_SELECTED_COLOR = android.R.color.holo_blue_bright
         const val DEFAULT_THUMB_CORNER_RADIUS = 0f
     }
 }
