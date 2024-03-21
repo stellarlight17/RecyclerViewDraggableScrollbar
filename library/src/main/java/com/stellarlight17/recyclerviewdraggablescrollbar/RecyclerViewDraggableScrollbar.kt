@@ -2,6 +2,7 @@ package com.stellarlight17.recyclerviewdraggablescrollbar
 
 import android.content.Context
 import android.util.AttributeSet
+import android.util.Log
 import android.view.MotionEvent
 import android.view.View
 import android.view.animation.Animation
@@ -27,6 +28,7 @@ class RecyclerViewDraggableScrollbar: RelativeLayout {
 
     private var thumbNormalColor = this.context.getColor(DEFAULT_THUMB_COLOR)
     private var thumbSelectedColor = this.context.getColor(DEFAULT_THUMB_SELECTED_COLOR)
+    private var leastAppearDuration = DEFAULT_LEAST_APPEAR_DURATION
 
     private var orientation = DEFAULT_ORIENTATION
 
@@ -41,7 +43,7 @@ class RecyclerViewDraggableScrollbar: RelativeLayout {
     private var minX = 0f
     private var maxX = -1f
 
-    private var hideDelay = 1000L
+    private var lastActiveTime: Long? = null
     private var hideTimer: Timer? = null
 
     private val thumbTouchListener = object: View.OnTouchListener {
@@ -50,6 +52,7 @@ class RecyclerViewDraggableScrollbar: RelativeLayout {
 
         override fun onTouch(p0: View?, p1: MotionEvent?): Boolean {
             this@RecyclerViewDraggableScrollbar.cancelHideTimer()
+            this@RecyclerViewDraggableScrollbar.lastActiveTime = System.currentTimeMillis()
 
             recyclerView?.let { recyclerView ->
                 if (thumbWidth <= 0) thumbWidth = thumbView.right.toFloat() - thumbView.left
@@ -129,6 +132,8 @@ class RecyclerViewDraggableScrollbar: RelativeLayout {
 
         override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
             super.onScrolled(recyclerView, dx, dy)
+            this@RecyclerViewDraggableScrollbar.lastActiveTime = System.currentTimeMillis()
+
             val isVertical = this@RecyclerViewDraggableScrollbar.orientation == VERTICAL
             if (moving || (isVertical && dy == 0) || (!isVertical && dx == 0)) return
 
@@ -206,7 +211,7 @@ class RecyclerViewDraggableScrollbar: RelativeLayout {
     }
 
     private fun updateVisibility(visible: Boolean) {
-        //this.visibility = if (visible) View.VISIBLE else View.INVISIBLE
+        this.visibility = if (visible) View.VISIBLE else View.INVISIBLE
         if (visible) this.showWithAnimation() else this.visibility = View.INVISIBLE
     }
 
@@ -251,6 +256,10 @@ class RecyclerViewDraggableScrollbar: RelativeLayout {
                 this.getDimension(R.styleable.RecyclerViewDraggableScrollbar_thumbCornerRadius, DEFAULT_THUMB_CORNER_RADIUS).also {
                     this@RecyclerViewDraggableScrollbar.thumbView.radius = it
                 }
+
+                this.getInt(R.styleable.RecyclerViewDraggableScrollbar_leastAppearDuration, DEFAULT_LEAST_APPEAR_DURATION.toInt()).also {
+                    this@RecyclerViewDraggableScrollbar.leastAppearDuration = it.toLong()
+                }
             } finally { this.recycle() }
         }
     }
@@ -261,10 +270,13 @@ class RecyclerViewDraggableScrollbar: RelativeLayout {
     }
 
     private fun setHideTimer() {
+        if (this.visibility != View.VISIBLE) return
         this.cancelHideTimer()
+        val currentTime = System.currentTimeMillis()
+        val delay = max(this.leastAppearDuration, currentTime - (this.lastActiveTime ?: currentTime))
         this.hideTimer = Timer().apply { this.schedule(object: TimerTask() {
             override fun run() { this@RecyclerViewDraggableScrollbar.hideWithAnimation() }
-        }, this@RecyclerViewDraggableScrollbar.hideDelay) }
+        }, delay)}
     }
 
     private fun hideWithAnimation() {
@@ -284,6 +296,7 @@ class RecyclerViewDraggableScrollbar: RelativeLayout {
         if (this.visibility == View.VISIBLE) return
         this.visibility = View.VISIBLE
         this.startAnimation(AnimationUtils.loadAnimation(this.context, android.R.anim.fade_in).apply { this.duration = 200 })
+        this.leastAppearDuration = System.currentTimeMillis()
     }
 
     init {
@@ -314,5 +327,7 @@ class RecyclerViewDraggableScrollbar: RelativeLayout {
         const val DEFAULT_THUMB_COLOR = android.R.color.holo_red_dark
         const val DEFAULT_THUMB_SELECTED_COLOR = android.R.color.holo_blue_bright
         const val DEFAULT_THUMB_CORNER_RADIUS = 0f
+
+        const val DEFAULT_LEAST_APPEAR_DURATION = 1000L
     }
 }

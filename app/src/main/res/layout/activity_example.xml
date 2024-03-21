@@ -23,6 +23,7 @@
         app:trackCornerRadius="10dp"
         app:thumbColor="?attr/colorPrimary"
         app:thumbSelectedColor="?colorSecondary"
-        app:thumbCornerRadius="10dp"/>
+        app:thumbCornerRadius="10dp"
+        app:leastAppearDuration="2000"/>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

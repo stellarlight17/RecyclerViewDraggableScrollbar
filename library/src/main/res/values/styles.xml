@@ -9,5 +9,6 @@
         <attr name="thumbColor" format="reference|color" />
         <attr name="thumbSelectedColor" format="reference|color" />
         <attr name="thumbCornerRadius" format="dimension" />
+        <attr name="leastAppearDuration" format="integer" />
     </declare-styleable>
 </resources>
