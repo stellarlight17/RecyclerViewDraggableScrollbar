@@ -62,9 +62,9 @@ afterEvaluate {
             // Creates a Maven publication called "release".
             release(MavenPublication) {
                 from components.release
-                groupId = "${group}"
+                groupId = "com.github.stellarlight17"
                 artifactId = 'RecyclerViewDraggableScrollbar'
-                version =  "${version}"
+                version =  "0.2.0"
             }
         }
     }

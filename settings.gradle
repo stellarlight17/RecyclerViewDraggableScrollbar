@@ -16,5 +16,5 @@ dependencyResolutionManagement {
     }
 }
 rootProject.name = "RecyclerViewDraggableScrollbar"
-//include ':app'
+include ':app'
 include ':library'
