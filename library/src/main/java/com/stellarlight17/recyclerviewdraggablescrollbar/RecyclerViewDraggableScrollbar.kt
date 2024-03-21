@@ -71,7 +71,7 @@ class RecyclerViewDraggableScrollbar: RelativeLayout {
                     MotionEvent.ACTION_MOVE -> {
                         if (moving) { this.computeThumbPosition(recyclerView, p1) }
                     }
-                    MotionEvent.ACTION_UP -> {
+                    MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
                         moving = false
                         this@RecyclerViewDraggableScrollbar.thumbContentView.setBackgroundColor(
                             this@RecyclerViewDraggableScrollbar.thumbNormalColor)
@@ -150,7 +150,8 @@ class RecyclerViewDraggableScrollbar: RelativeLayout {
                 extent = recyclerView.computeHorizontalScrollExtent()
                 contentSize = recyclerView.computeHorizontalScrollRange() - extent
             }
-            this@RecyclerViewDraggableScrollbar.updateVisibility(contentSize > extent)
+            //this@RecyclerViewDraggableScrollbar.updateVisibility(contentSize > extent)
+            this@RecyclerViewDraggableScrollbar.updateVisibility(true)
 
             // calculate thumb position
             if (isVertical) {
