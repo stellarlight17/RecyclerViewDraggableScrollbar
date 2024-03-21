@@ -292,6 +292,7 @@ class RecyclerViewDraggableScrollbar: RelativeLayout {
         this.trackContentView = this.findViewById(R.id.trackContentView)
         this.thumbView = this.findViewById(R.id.thumbView)
         this.thumbContentView = this.thumbView.findViewById(R.id.thumbContentView)
+        this.visibility = View.INVISIBLE
     }
 
     @RestrictTo(RestrictTo.Scope.LIBRARY_GROUP_PREFIX)
